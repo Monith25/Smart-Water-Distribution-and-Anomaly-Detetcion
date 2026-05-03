@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zone A</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<h1>Zone B Readings</h1>
+
+<div class="top-cards">
+    <div class="card">Flow<br><span id="flow">0</span></div>
+    <div class="card">Pressure<br><span id="pressure">0</span></div>
+    <div class="card">Temp<br><span id="temp">0</span></div>
+    <div class="card">TDS<br><span id="tds">0</span></div>
+    <div class="card">pH<br><span id="ph">0</span></div>
+    <div class="card">Vibration<br><span id="vibration">0</span></div>
+</div>
+
+<div class="graphs-grid">
+    <div class="graph-card"><canvas id="flowChart"></canvas></div>
+    <div class="graph-card"><canvas id="pressureChart"></canvas></div>
+    <div class="graph-card"><canvas id="tempChart"></canvas></div>
+
+    <div class="graph-card"><canvas id="tdsChart"></canvas></div>
+    <div class="graph-card"><canvas id="phChart"></canvas></div>
+    <div class="graph-card"><canvas id="vibrationChart"></canvas></div>
+</div>
+
+<a href="/" class="back-btn">Back</a>
+
+<script>
+
+let mode = "live";
+
+// shared arrays
+let labels = [];
+
+let datasets = {
+    flow: [],
+    pressure: [],
+    temp: [],
+    tds: [],
+    ph: [],
+    vibration: []
+};
+
+const limits = {
+    live: 30,
+    "1min": 60,
+    "5min": 300
+};
+
+// ===== CREATE CHART =====
+function createChart(ctx, label, key, color) {
+    return new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: label,
+                data: [],
+                borderColor: color,
+                backgroundColor: color,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            animation: false,
+            plugins: {
+                legend: { labels: { color: "#fff" } }
+            },
+            scales: {
+                x: { ticks: { color: "#aaa" } },
+                y: { ticks: { color: "#aaa" } }
+            }
+        }
+    });
+}
+
+// ===== INIT CHARTS =====
+const flowChart = createChart(document.getElementById("flowChart"), "Flow", "flow", "#3b82f6");
+const pressureChart = createChart(document.getElementById("pressureChart"), "Pressure", "pressure", "#22c55e");
+const tempChart = createChart(document.getElementById("tempChart"), "Temp", "temp", "#f59e0b");
+const tdsChart = createChart(document.getElementById("tdsChart"), "TDS", "tds", "#a855f7");
+const phChart = createChart(document.getElementById("phChart"), "pH", "ph", "#ef4444");
+const vibrationChart = createChart(document.getElementById("vibrationChart"), "Vibration", "vibration", "#14b8a6");
+
+// ===== MODE SWITCH =====
+function setMode(newMode, event) {
+    mode = newMode;
+
+    // clear arrays (NOT reassign)
+    labels.length = 0;
+
+    datasets.flow.length = 0;
+    datasets.pressure.length = 0;
+    datasets.temp.length = 0;
+    datasets.tds.length = 0;
+    datasets.ph.length = 0;
+    datasets.vibration.length = 0;
+
+    // highlight button
+    document.querySelectorAll(".time-controls button")
+        .forEach(btn => btn.classList.remove("active"));
+
+    if (event) event.target.classList.add("active");
+
+    // force chart reset
+    updateCharts();
+}
+
+// ===== UPDATE CHARTS =====
+function updateCharts() {
+
+    flowChart.data.labels = labels;
+    flowChart.data.datasets[0].data = datasets.flow;
+
+    pressureChart.data.labels = labels;
+    pressureChart.data.datasets[0].data = datasets.pressure;
+
+    tempChart.data.labels = labels;
+    tempChart.data.datasets[0].data = datasets.temp;
+
+    tdsChart.data.labels = labels;
+    tdsChart.data.datasets[0].data = datasets.tds;
+
+    phChart.data.labels = labels;
+    phChart.data.datasets[0].data = datasets.ph;
+
+    vibrationChart.data.labels = labels;
+    vibrationChart.data.datasets[0].data = datasets.vibration;
+
+    flowChart.update();
+    pressureChart.update();
+    tempChart.update();
+    tdsChart.update();
+    phChart.update();
+    vibrationChart.update();
+}
+
+// ===== FETCH DATA =====
+async function fetchData() {
+    try {
+        const res = await fetch("/data");
+        const all = await res.json();
+        const d = all.B;
+
+        const now = new Date().toLocaleTimeString();
+
+        // push new data
+        labels.push(now);
+
+        datasets.flow.push(d.flow ?? 0);
+        datasets.pressure.push(d.pressure ?? 0);
+        datasets.temp.push(d.temp ?? 0);
+        datasets.tds.push(d.tds ?? 0);
+        datasets.ph.push(d.ph ?? 0);
+        datasets.vibration.push(d.vibration ?? 0);
+
+        // limit data
+        const max = limits[mode];
+
+        if (labels.length > max) {
+            labels.shift();
+            datasets.flow.shift();
+            datasets.pressure.shift();
+            datasets.temp.shift();
+            datasets.tds.shift();
+            datasets.ph.shift();
+            datasets.vibration.shift();
+        }
+
+        // update cards
+        document.getElementById("flow").innerText = (d.flow ?? 0).toFixed(2);
+	document.getElementById("pressure").innerText = Math.round(d.pressure ?? 0);
+	document.getElementById("temp").innerText = (d.temp ?? 0).toFixed(1);
+	document.getElementById("tds").innerText = (d.tds ?? 0).toFixed(1);
+	document.getElementById("ph").innerText = (d.ph ?? 0).toFixed(2);
+	document.getElementById("vibration").innerText = (d.vibration ?? 0).toFixed(3);
+
+        // update graphs
+        updateCharts();
+
+    } catch (err) {
+        console.log("Fetch error:", err);
+    }
+}
+
+// ===== LOOP =====
+setInterval(fetchData, 1000);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Water Distribution</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+</head>
+<body>
+
+<div class="page">
+
+    <div class="header">
+        <h1>Smart Water Distribution</h1>
+        <p>Bangalore Control Panel</p>
+    </div>
+
+    <!-- MAP -->
+    <div class="map-wrapper">
+        <img src="{{ url_for('static', filename='image.jpg') }}" class="map-img">
+
+        <!-- ZONE MARKERS -->
+        <div class="zone zone-a">A</div>
+        <div class="zone zone-b">B</div>
+        <div class="zone zone-c">C</div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="controls">
+        <button onclick="location.href='/zoneA'">Zone A</button>
+        <button onclick="location.href='/zoneB'">Zone B</button>
+        <button onclick="location.href='/zoneC'">Zone C</button>
+
+    </div>
+        <button class="anomaly-btn" onclick="location.href='/anomaly'">
+    Anomaly Detection
+</button>
+
+
+</div>
+
+</body>
+</html>
